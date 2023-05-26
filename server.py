@@ -39,12 +39,14 @@ async def create_item(item: Item):
 @app.put("/items/{item_id}")
 async def update_item(item_id: str, item: Item):
     item_dict = item.dict()
-    result = collection.update_one(
-        {"_id": ObjectId(item_id)}, {"$set": item_dict})
-    if result.modified_count == 1:
-        return {"success": True}
-    else:
-        return {"success": False, "error": "Item not found"}
+    with client.start_session() as session:
+        with session.start_transaction():
+            result = collection.update_one(
+                {"_id": ObjectId(item_id)}, {"$set": item_dict},session=session)
+            if result.modified_count == 1:
+                return {"success": True}
+            else:
+                return {"success": False, "error": "Item not found"}
 
 #Add to inventory count
 @app.put("/items/{item_id}/add")
